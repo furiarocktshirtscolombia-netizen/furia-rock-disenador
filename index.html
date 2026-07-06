@@ -556,22 +556,23 @@ document.getElementById("btnWa").onclick = ()=>{
   const qty  = document.getElementById("qty").value || "1";
   const notes= document.getElementById("notes").value.trim();
   const prints = AREAS.filter(a=>slots[a.id].img);
+  // solo caracteres seguros (los emojis de 4 bytes se dañan en la redirección de WhatsApp)
   const lines = [
-    "¡Hola " + STORE_NAME + "! 🤘",
+    "¡Hola " + STORE_NAME + "! \\m/",
     "Quiero pedir una camiseta personalizada:",
     "",
-    "👕 Color: " + S.color.name,
-    "📏 Talla: " + size,
-    "🔢 Cantidad: " + qty,
+    "• Color: " + S.color.name,
+    "• Talla: " + size,
+    "• Cantidad: " + qty,
   ];
   if(prints.length){
-    lines.push("🎯 Estampados: " + prints.map(a=>a.name).join(" + "));
+    lines.push("• Estampados: " + prints.map(a=>a.name).join(" + "));
   }
-  if(notes) lines.push("📝 Notas: " + notes);
-  lines.push("", prints.length ? "Ya descargué el mockup de mi diseño, te lo adjunto aquí 📎" : "Te cuento la idea del diseño por aquí 👇");
+  if(notes) lines.push("• Notas: " + notes);
+  lines.push("", prints.length ? "Ya descargué el mockup de mi diseño, te lo adjunto aquí." : "Te cuento la idea del diseño por aquí:");
   const msg = encodeURIComponent(lines.join("\n"));
   if(prints.length) exportPNG(); // descarga automática para adjuntar en el chat
-  window.open("https://wa.me/" + WHATSAPP_NUMBER + "?text=" + msg, "_blank");
+  window.open("https://api.whatsapp.com/send?phone=" + WHATSAPP_NUMBER + "&text=" + msg, "_blank");
 };
 syncUI();
 render();
