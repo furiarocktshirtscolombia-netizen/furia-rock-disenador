@@ -19,6 +19,7 @@
   :root{
     --bg:#0a0a0c; --panel:#151519; --panel2:#1f1f26; --line:#2e2e38;
     --txt:#f4f2ee; --muted:#9d9daa; --accent:#e6242f; --accent2:#ff4d4d;
+    --workspace-bg-1:#f3f2ee; --workspace-bg-2:#d9d7d1; --workspace-border:#c8c5bd;
   }
   *{box-sizing:border-box; margin:0; padding:0}
   body{
@@ -63,14 +64,19 @@
     background:linear-gradient(160deg,var(--accent),#8f0f18); color:#fff; font-weight:800; font-size:13px;
     box-shadow:0 0 12px rgba(230,36,47,.5);
   }
-  .wrap{display:grid; grid-template-columns:minmax(320px,1fr) 370px; gap:22px; max-width:1080px; margin:26px auto; padding:0 16px 50px}
+  .wrap{display:grid; grid-template-columns:280px minmax(320px,1fr) 340px; gap:22px; max-width:1200px; margin:26px auto; padding:0 16px 50px; align-items:start}
   @media(max-width:860px){ .wrap{grid-template-columns:1fr} }
   .canvasBox{
-    background:linear-gradient(170deg,#17171c,#101014);
-    border:1px solid var(--line); border-radius:20px; padding:16px;
+    background:linear-gradient(160deg,var(--workspace-bg-1),var(--workspace-bg-2));
+    border:1px solid var(--workspace-border); border-radius:20px; padding:28px 16px 22px;
     display:flex; flex-direction:column; align-items:center; gap:12px;
-    box-shadow:0 30px 60px -30px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.04);
+    box-shadow:0 30px 60px -30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.6);
     position:sticky; top:14px; align-self:start;
+  }
+  .canvasBox::after{
+    content:""; width:65%; max-width:320px; height:20px; margin-top:-4px;
+    background:radial-gradient(ellipse at center, rgba(20,20,25,.30), transparent 72%);
+    filter:blur(2px);
   }
   @media(max-width:860px){ .canvasBox{position:static} }
   .viewTabs{display:flex; gap:8px; align-self:stretch; justify-content:center}
@@ -80,7 +86,7 @@
     font-size:17px; letter-spacing:2px; cursor:pointer; transition:all .15s;
   }
   .vtab.on{background:linear-gradient(160deg,var(--accent),#9c1119); color:#fff; border-color:transparent; box-shadow:0 4px 18px rgba(230,36,47,.4)}
-  canvas{width:100%; max-width:480px; height:auto; border-radius:14px; touch-action:none; cursor:grab; background:#e8e6e3}
+  canvas{width:100%; max-width:480px; height:auto; border-radius:14px; touch-action:none; cursor:grab; background:var(--workspace-bg-1)}
   canvas.drag{cursor:grabbing}
   .hint{font-size:12.5px; color:var(--muted); text-align:center}
   .panel{display:flex; flex-direction:column; gap:16px}
@@ -180,65 +186,73 @@
 
 <div class="wrap">
 
-  <div class="canvasBox">
-    <div class="viewTabs">
-      <button class="vtab on" id="vFront">Frente</button>
-      <button class="vtab" id="vBack">Espalda</button>
-    </div>
-    <canvas id="cv" width="960" height="1275"></canvas>
-    <div class="hint" id="hint">Sube una imagen y arrástrala sobre la camiseta para acomodarla 👆</div>
-  </div>
+<div class="panel colLeft">
 
-  <div class="panel">
+<div class="card">
+<h3>1 · COLOR DE LA PRENDA</h3>
+<div class="swatches" id="swatches"></div>
+</div>
 
-    <div class="card">
-      <h3>1 · COLOR DE LA PRENDA</h3>
-      <div class="swatches" id="swatches"></div>
-    </div>
+<div class="card">
+<h3>2 · ÁREA DE ESTAMPACIÓN</h3>
+<div class="btns" id="areas"></div>
+</div>
 
-    <div class="card">
-      <h3>2 · ÁREA DE ESTAMPACIÓN</h3>
-      <div class="btns" id="areas"></div>
-    </div>
+<div class="card">
+<h3>3 · TALLA</h3>
+<label class="lbl" for="size">Talla de la prenda</label>
+<select id="size" aria-label="Talla de la prenda"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option></select>
+</div>
 
-    <div class="card">
-      <h3>3 · TUS DISEÑOS</h3>
-      <div class="upl">
-        <div class="uplBtn" id="uplBtn">📷 <b>Sube tu imagen</b> para el área seleccionada<br><small>logo, foto, dibujo… JPG o PNG · un diseño por área</small></div>
-        <input type="file" id="file" accept="image/*">
-        <div id="imgCtrls" style="display:none">
-          <label class="lbl">Tamaño del estampado</label>
-          <input type="range" id="scale" min="20" max="140" value="85">
-          <label class="lbl">Rotación</label>
-          <input type="range" id="rot" min="-45" max="45" value="0">
-          <label class="check"><input type="checkbox" id="blend"> Integrar con la tela (ideal si tu imagen tiene fondo blanco)</label>
-          <button id="delBtn" class="delBtn">🗑 Quitar este diseño</button>
-        </div>
-        <div id="printList"></div>
-      </div>
-    </div>
+</div>
 
-    <div class="card">
-      <h3>4 · TU PEDIDO</h3>
-      <div class="row">
-        <div><label class="lbl">Talla</label>
-          <select id="size"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option></select>
-        </div>
-        <div><label class="lbl">Cantidad</label>
-          <input type="number" id="qty" min="1" value="1">
-        </div>
-      </div>
-      <label class="lbl">Notas (opcional)</label>
-      <textarea id="notes" placeholder="Ej: la quiero oversize, el estampado en tinta blanca…"></textarea>
+<div class="canvasBox">
+<div class="viewTabs">
+<button class="vtab on" id="vFront" aria-label="Ver frente de la camiseta">Frente</button>
+<button class="vtab" id="vBack" aria-label="Ver espalda de la camiseta">Espalda</button>
+</div>
+<canvas id="cv" width="960" height="1275" aria-label="Vista previa de tu camiseta personalizada"></canvas>
+<div class="hint" id="hint">Sube una imagen y arrástrala sobre la camiseta para acomodarla 👆</div>
+</div>
 
-      <div style="display:flex; flex-direction:column; gap:10px; margin-top:16px">
-        <button class="big dl" id="btnDl">⬇️ Descargar mi diseño (imagen)</button>
-        <button class="big wa" id="btnWa">🤘 PEDIR POR WHATSAPP</button>
-      </div>
-      <p class="note">Al pedir por WhatsApp se descarga automáticamente la imagen de tu diseño:<br><b>adjúntala en el chat</b> para que veamos exactamente cómo la quieres. 🔥</p>
-    </div>
+<div class="panel colRight">
 
-  </div>
+<div class="card">
+<h3>4 · TUS DISEÑOS</h3>
+<div class="upl">
+<div class="uplBtn" id="uplBtn">📷 <b>Sube tu imagen</b> para el área seleccionada<br><small>logo, foto, dibujo… JPG o PNG · un diseño por área</small></div>
+<input type="file" id="file" accept="image/*" aria-label="Subir imagen para el área seleccionada">
+<div id="imgCtrls" style="display:none">
+<label class="lbl">Tamaño del estampado</label>
+<input type="range" id="scale" min="20" max="140" value="85" aria-label="Tamaño del estampado">
+<label class="lbl">Rotación</label>
+<input type="range" id="rot" min="-45" max="45" value="0" aria-label="Rotación del estampado">
+<label class="check"><input type="checkbox" id="blend"> Integrar con la tela (ideal si tu imagen tiene fondo blanco)</label>
+<div style="display:flex; gap:8px; margin-top:12px">
+<button id="resetBtn" type="button" class="delBtn">↺ Restablecer posición</button>
+<button id="delBtn" class="delBtn">🗑 Quitar este diseño</button>
+</div>
+</div>
+<div id="printList"></div>
+</div>
+</div>
+
+<div class="card">
+<h3>5 · TU PEDIDO</h3>
+<label class="lbl">Cantidad</label>
+<input type="number" id="qty" min="1" value="1" aria-label="Cantidad">
+<label class="lbl">Notas (opcional)</label>
+<textarea id="notes" placeholder="Ej: la quiero oversize, el estampado en tinta blanca…" aria-label="Notas del pedido"></textarea>
+
+<div style="display:flex; flex-direction:column; gap:10px; margin-top:16px">
+<button class="big dl" id="btnDl">⬇️ Descargar mi diseño (imagen)</button>
+<button class="big wa" id="btnWa">🤘 PEDIR POR WHATSAPP</button>
+</div>
+<p class="note">Al pedir por WhatsApp se descarga automáticamente la imagen de tu diseño:<br><b>adjúntala en el chat</b> para que veamos exactamente cómo la quieres. 🔥</p>
+</div>
+
+</div>
+
 </div>
 
 <footer>© Furia Rock T-Shirts · Hecho con 🤘 en Colombia</footer>
@@ -304,6 +318,7 @@ COLORS.forEach((c,i)=>{
   d.className = "sw" + (i===0?" on":"");
   d.style.background = `radial-gradient(circle at 32% 28%, ${lighten(c.hex,22)}, ${c.hex} 55%, ${lighten(c.hex,-18)})`;
   d.title = c.name;
+  d.setAttribute("aria-label", "Color " + c.name);
   d.innerHTML = `<small>${c.name}</small>`;
   d.onclick = ()=>{ S.color=c; [...swBox.children].forEach(x=>x.classList.remove("on")); d.classList.add("on"); render(); };
   swBox.appendChild(d);
@@ -313,6 +328,7 @@ AREAS.forEach((a,i)=>{
   const b = document.createElement("button");
   b.className = "chip" + (i===0?" on":"");
   b.dataset.area = a.id;
+  b.setAttribute("aria-label", "Área de estampado: " + a.name);
   b.innerHTML = `<span>${a.name}</span>`;
   b.onclick = ()=>{ S.activeId=a.id; S.view=a.view; syncUI(); render(); };
   areaBox.appendChild(b);
@@ -358,7 +374,7 @@ function syncUI(){
     };
   });
   [...elList.querySelectorAll("button")].forEach(btn=>{
-    btn.onclick = (ev)=>{ ev.stopPropagation(); const id=btn.dataset.del; slots[id].img=null; slots[id].fname=""; syncUI(); render(); };
+    btn.onclick = (ev)=>{ ev.stopPropagation(); const id=btn.dataset.del; if(!confirm("¿Quitar este diseño?")) return; slots[id].img=null; slots[id].fname=""; syncUI(); render(); };
   });
   const n = AREAS.filter(x=>slots[x.id].img).length;
   elHint.textContent = n ? "Arrastra cada diseño para acomodarlo · puedes agregar otro en otra área 👆"
@@ -383,9 +399,18 @@ elRot.oninput   = (e)=>{ activeSlot().rot = +e.target.value; render(); };
 elBlend.onchange= (e)=>{ activeSlot().blend = e.target.checked; render(); };
 document.getElementById("delBtn").onclick = ()=>{
   const sl = activeSlot();
+  if(sl.img && !confirm("¿Quitar este diseño del área actual?")) return;
   sl.img = null; sl.fname = "";
   syncUI(); render();
 };
+const elReset = document.getElementById("resetBtn");
+if(elReset){
+  elReset.onclick = ()=>{
+    const sl = activeSlot();
+    sl.scale = .85; sl.rot = 0; sl.ox = 0; sl.oy = 0;
+    syncUI(); render();
+  };
+}
 
 /* ============ ESTAMPADOS ============ */
 function drawSlot(area){
@@ -394,12 +419,16 @@ function drawSlot(area){
   const isActive = area.id===S.activeId;
   if(showGuide && isActive){
     ctx.save();
+    if(!sl.img){
+      ctx.fillStyle = "rgba(230,36,47,.05)";
+      ctx.fillRect(rx,ry,rw,rh);
+    }
     ctx.setLineDash([7,6]);
-    ctx.strokeStyle = "rgba(230,36,47,.9)";
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = sl.img ? "rgba(230,36,47,.35)" : "rgba(230,36,47,.75)";
+    ctx.lineWidth = 1.5;
     ctx.strokeRect(rx,ry,rw,rh);
     if(!sl.img){
-      ctx.fillStyle = "rgba(230,36,47,.8)";
+      ctx.fillStyle = "rgba(200,30,40,.85)";
       ctx.font = "600 17px Inter, sans-serif";
       ctx.textAlign = "center";
       ctx.fillText("Tu diseño aquí", rx+rw/2, ry+rh/2+6);
