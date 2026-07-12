@@ -167,6 +167,12 @@
   }
   .delBtn:hover{border-color:var(--accent); color:var(--accent2)}
   footer{text-align:center; color:#4d4d58; font-size:12px; padding:24px}
+
+/* ── Fase: Sistema de Referencias DTG (estilos aditivos) ── */
+#refCard select{width:100%; padding:12px 14px; border-radius:10px; background:var(--panel2); border:1px solid var(--line); color:var(--txt); font-family:inherit; font-size:14px}
+.techRow{display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:12.5px; padding:7px 0; border-bottom:1px dashed var(--line); color:var(--muted)}
+.techRow:last-child{border-bottom:none}
+.techRow b{color:var(--txt); font-weight:700; text-align:right; white-space:nowrap}
 </style>
 </head>
 <body>
@@ -187,6 +193,13 @@
 <div class="wrap">
 
 <div class="panel colLeft">
+
+<div class="card" id="refCard">
+<h3>0 · PRODUCTO</h3>
+<label class="lbl" for="refSelect">Elige tu referencia</label>
+<select id="refSelect" aria-label="Selecciona la referencia del producto"><option value="">Cargando referencias…</option></select>
+<p class="hint" id="refHint" style="text-align:left; margin-top:8px"></p>
+</div>
 
 <div class="card">
 <h3>1 · COLOR DE LA PRENDA</h3>
@@ -237,8 +250,30 @@
 </div>
 </div>
 
+<div class="card" id="techCard">
+<h3>5 · FICHA TÉCNICA Y COSTOS</h3>
+<p class="hint" id="techEmpty">Sube un diseño para ver aquí las medidas reales y el costo del estampado.</p>
+<div id="techRows" style="display:none">
+<div class="techRow"><span>Referencia</span><b id="tRef">—</b></div>
+<div class="techRow"><span>Categoría</span><b id="tCat">—</b></div>
+<div class="techRow"><span>ID</span><b id="tId">—</b></div>
+<div class="techRow"><span>Área seleccionada</span><b id="tArea">—</b></div>
+<div class="techRow"><span>Medida máxima del área</span><b id="tMax">—</b></div>
+<div class="techRow"><span>Medida real del diseño</span><b id="tReal">—</b></div>
+<div class="techRow"><span>% ocupado</span><b id="tPct">—</b></div>
+<div class="techRow"><span>Área utilizada</span><b id="tAreaCm2">—</b></div>
+<div class="techRow"><span>Costo por cm²</span><b id="tCostoCm2">—</b></div>
+<div class="techRow"><span>Costo del estampado</span><b id="tCostoEstampado">—</b></div>
+<div class="techRow"><span>Costo de la prenda</span><b id="tCostoPrenda">—</b></div>
+<div class="techRow"><span>Costo total</span><b id="tCostoTotal">—</b></div>
+<div class="techRow"><span>Precio sugerido</span><b id="tPrecioSugerido">—</b></div>
+<div class="techRow"><span>Margen de utilidad</span><b id="tMargen">—</b></div>
+</div>
+<p class="hint" id="techPending" style="display:none">Esta referencia todavía no tiene medidas de impresión cargadas. Pídele al equipo que las complete en la hoja de Referencias.</p>
+</div>
+
 <div class="card">
-<h3>5 · TU PEDIDO</h3>
+<h3>6 · TU PEDIDO</h3>
 <label class="lbl">Cantidad</label>
 <input type="number" id="qty" min="1" value="1" aria-label="Cantidad">
 <label class="lbl">Notas (opcional)</label>
@@ -606,6 +641,124 @@ document.getElementById("btnWa").onclick = ()=>{
 syncUI();
 render();
 
+</script>
+<script>
+/* ============ FASE: SISTEMA DE REFERENCIAS DTG (capa aditiva) ============ */
+/* No modifica AR, AREAS, FW, FH, drawSlot(), evPos(), sl.scale/ox/oy/rot,   */
+/* el sistema de máscaras/sombras, los límites de arrastre ni la exportación.*/
+const REF_API_URL = "https://script.google.com/macros/s/AKfycby9m-yDkajrDZyINyGjsrWW_Efu48IbI9GtjOpU0aIsO_uZsMppobAnIx8hIRU1yYsd/exec";
+let REFS = [];
+let currentRef = null;
+
+function fmtCOP(n){
+if(n == null || isNaN(n)) return "—";
+return "$" + Math.round(n).toLocaleString("es-CO");
+}
+
+function poblarReferencias(){
+const sel = document.getElementById("refSelect");
+const hint = document.getElementById("refHint");
+if(!REFS.length){
+sel.innerHTML = '<option value="">No hay referencias disponibles</option>';
+hint.textContent = "No se pudo cargar el catálogo de referencias. Los precios y medidas físicas no estarán disponibles, pero puedes seguir diseñando normalmente.";
+return;
+}
+sel.innerHTML = REFS.map(r => `<option value="${r.id}">${r.name}</option>`).join("");
+currentRef = REFS[0];
+sel.value = currentRef.id;
+hint.textContent = "";
+sel.onchange = () => {
+currentRef = REFS.find(r => r.id === sel.value) || null;
+updateTechPanel();
+};
+updateTechPanel();
+}
+
+fetch(REF_API_URL + "?action=getData")
+.then(r => r.json())
+.then(d => { REFS = Array.isArray(d.refs) ? d.refs : []; poblarReferencias(); })
+.catch(() => { poblarReferencias(); });
+
+function calcularMedidasReales(){
+const area = activeArea();
+const sl = activeSlot();
+if(!sl || !sl.img || !currentRef) return null;
+const [rx, ry, rw, rh] = area.rect;
+const img = sl.img;
+const fit = Math.min(rw / img.width, rh / img.height) * sl.scale;
+const wPx = img.width * fit, hPx = img.height * fit;
+const esEspalda = area.view === "back";
+const physAncho = esEspalda ? currentRef.espaldaAnchoCm : currentRef.frenteAnchoCm;
+const physAlto = esEspalda ? currentRef.espaldaAltoCm : currentRef.frenteAltoCm;
+if(!physAncho || !physAlto) return { pending: true };
+const realW = wPx * (physAncho / rw);
+const realH = hPx * (physAlto / rh);
+const areaCm2 = realW * realH;
+const costoCm2 = currentRef.costoCm2 || 170;
+const costoEstampado = areaCm2 * costoCm2;
+const costoPrenda = currentRef.cost || 0;
+const costoTotal = costoPrenda + costoEstampado;
+const precioSugerido = currentRef.precioSugerido || 0;
+const ganancia = precioSugerido - costoTotal;
+const margen = precioSugerido > 0 ? (ganancia / precioSugerido * 100) : 0;
+return {
+realW, realH, areaCm2, costoCm2, costoEstampado, costoPrenda, costoTotal,
+precioSugerido, ganancia, margen,
+pctW: (wPx / rw) * 100, pctH: (hPx / rh) * 100,
+physAncho, physAlto
+};
+}
+
+function updateTechPanel(){
+const empty = document.getElementById("techEmpty");
+const rows = document.getElementById("techRows");
+const pending = document.getElementById("techPending");
+if(!empty || !rows || !pending) return;
+const sl = activeSlot();
+if(!currentRef || !sl || !sl.img){
+empty.style.display = "";
+rows.style.display = "none";
+pending.style.display = "none";
+return;
+}
+const r = calcularMedidasReales();
+if(!r){
+empty.style.display = "";
+rows.style.display = "none";
+pending.style.display = "none";
+return;
+}
+if(r.pending){
+empty.style.display = "none";
+rows.style.display = "none";
+pending.style.display = "";
+return;
+}
+const area = activeArea();
+empty.style.display = "none";
+pending.style.display = "none";
+rows.style.display = "";
+document.getElementById("tRef").textContent = currentRef.name;
+document.getElementById("tCat").textContent = currentRef.cat || "—";
+document.getElementById("tId").textContent = currentRef.id;
+document.getElementById("tArea").textContent = area.name;
+document.getElementById("tMax").textContent = r.physAncho.toFixed(1) + " × " + r.physAlto.toFixed(1) + " cm";
+document.getElementById("tReal").textContent = r.realW.toFixed(1) + " × " + r.realH.toFixed(1) + " cm";
+document.getElementById("tPct").textContent = Math.min(r.pctW, 100).toFixed(0) + "% × " + Math.min(r.pctH, 100).toFixed(0) + "%";
+document.getElementById("tAreaCm2").textContent = r.areaCm2.toFixed(0) + " cm²";
+document.getElementById("tCostoCm2").textContent = fmtCOP(r.costoCm2) + "/cm²";
+document.getElementById("tCostoEstampado").textContent = fmtCOP(r.costoEstampado);
+document.getElementById("tCostoPrenda").textContent = fmtCOP(r.costoPrenda);
+document.getElementById("tCostoTotal").textContent = fmtCOP(r.costoTotal);
+document.getElementById("tPrecioSugerido").textContent = fmtCOP(r.precioSugerido);
+document.getElementById("tMargen").textContent = r.margen.toFixed(0) + "%";
+}
+
+const _renderFR_ = render;
+render = function(){
+_renderFR_();
+try { updateTechPanel(); } catch(errFR){ /* no interrumpir el render si falla el panel */ }
+};
 </script>
 </body>
 </html>
